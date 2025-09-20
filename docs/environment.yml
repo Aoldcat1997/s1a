@@ -1,0 +1,15 @@
+dependencies:
+  - ipykernel
+  - mock
+  - nbconvert
+  - notebook
+  - pandoc
+  - pip
+  - python-dateutil
+  - recommonmark
+  - sphinx
+  - sphinx_rtd_theme 
+  - pip
+  - pip:
+    - nbsphinx
+    - sphinx-autobuild
