@@ -1074,10 +1074,10 @@ class Nansat(Domain, Exporter):
         return fig
 
 
-    def write_geotiffimage(self, filename, band_id=1):
+    def write_geotiffband(self, filename, band_id=None):
         """
         Writes a GeoTiff file for a given band, with optional scaling and log transform.
-
+        If band_id is None, all bands are written to separate files with suffix _b{band_id}.
         Parameters
         ----------
         filename : str
@@ -1096,62 +1096,62 @@ class Nansat(Domain, Exporter):
         Colormap is fetched from metadata 'colormap', fallback is 'gray'.
         Color limits are fetched from metadata 'minmax', fallback is min/max of data.
         """
-        bandNo = self.get_band_number(band_id)
-        band = self.get_GDALRasterBand(band_id)
-        data = self.__getitem__(bandNo)
+        if band_id != None:
+            bandNo = self.get_band_number(band_id)
+            band = self.get_GDALRasterBand(band_id)
+            data = self.__getitem__(bandNo)
+            # Get min/max for scaling
+            minmax = band.GetMetadataItem('minmax')
+            scaledData = data
+            dtype = gdal.GDT_Float32 if scaledData.dtype.kind == 'f' else gdal.GDT_Int16
+            outds = gdal.GetDriverByName('Gtiff')
+            outDataset = outds.Create(filename,
+                                      band.XSize,
+                                      band.YSize, 1,
+                                      dtype,
+                                      ['COMPRESS=LZW']
+                                      )
+            data = self.__getitem__(bandNo)
+            outDataset.GetRasterBand(1).WriteArray(data)
+            outDataset.GetRasterBand(1).SetMetadata(band.GetMetadata())
+            del outDataset
+            self.vrt.copyproj(filename)
+        elif band_id== None:
+            band_num = self.vrt.dataset.RasterCount
+            for band_id in range(1,band_num):
+                bandNo = self.get_band_number(band_id)
+                band = self.get_GDALRasterBand(band_id)
+                data = self.__getitem__(bandNo)
+                minmax = band.GetMetadataItem('minmax')
+                scaledData = data
+                dtype = gdal.GDT_Float32 if scaledData.dtype.kind == 'f' else gdal.GDT_Int16
+                outDataset = gdal.GetDriverByName('Gtiff').Create(filename,
+                                                                  band.XSize,
+                                                                  band.YSize, band_num,
+                                                                  dtype,
+                                                                  ['COMPRESS=LZW'])
+                data = self.__getitem__(bandNo)
+                outDataset.GetRasterBand(band_id).WriteArray(data)
+                outDataset.GetRasterBand(band_id).SetMetadata(band.GetMetadata())
 
-
-        
-
-        # Get min/max for scaling
-        minmax = band.GetMetadataItem('minmax')
-        if minmax is not None:
-            bMin, bMax = [float(x) for x in minmax.split()]
+            del outDataset
+            self.vrt.copyproj(filename)
         else:
-            bMin, bMax = np.nanmin(data), np.nanmax(data)
-        # print(f'Using min/max: {bMin}, {bMax}')
-        # Scale data to 0-255 if requested
-        # exit()
-        scaledData = data
-        dtype = gdal.GDT_Float32 if scaledData.dtype.kind == 'f' else gdal.GDT_Int16
-        # print(np.nanmin(scaledData), np.nanmax(scaledData), scaledData.dtype)
-        try:
-            colormap = band.GetMetadataItem('colormap')
-            cmap = cm.get_cmap(colormap, 256)
-            cmap = cmap(np.arange(256)) * 255
-        except:
-            if not MATPLOTLIB_IS_INSTALLED:
-                self.logger.debug('Geotiff is only available in gray '
-                                  'since matplotlib is not installed.')
-            cmap = np.vstack([np.arange(256.),
-                              np.arange(256.),
-                              np.arange(256.),
-                              np.ones(256)*255]).T
-        colorTable = gdal.ColorTable()
-        for i in range(cmap.shape[0]):
-            colorEntry = (int(cmap[i, 0]), int(cmap[i, 1]),
-                          int(cmap[i, 2]), int(cmap[i, 3]))
-            colorTable.SetColorEntry(i, colorEntry)
-        # Write Tiff image, with data scaled to values between 0 and 255
-        outDataset = gdal.GetDriverByName('Gtiff').Create(filename,
-                                                          band.XSize,
-                                                          band.YSize, 1,
-                                                          gdal.GDT_Byte,
-                                                          ['COMPRESS=LZW'])
-        data = self.__getitem__(bandNo)
-        # scaledData = ((data - bMin) / (bMax - bMin)) * 255
-        outDataset.GetRasterBand(1).WriteArray(data)
-        outDataset.GetRasterBand(1).SetMetadata(band.GetMetadata())
-        try:
-            outDataset.GetRasterBand(1).SetColorTable(colorTable)
-        except:
-            # Happens after reprojection, a possible bug?
-            print('Could not set color table')
-            print(colorTable)
-        outDataset = None
-        self.vrt.copyproj(filename)
+            try:
+
+                raise AssertionError()
+            except Exception as e:
+                print("The Input band_id Error!")
+    def get_data(self):
+        """
+        base add bands，renturn bands arr
+        返回数组，便于后续处理，处理后的数组需要根据原有数据获取坐标与投影细信息；
+        :return:
+        arr
+        """
     def write_geotiff(self, filename, band_id=1):
         """Writes an 8-bit GeoTiff origion data for a given band.
+        this function is only for one band data and base on the DN value
 
         The colormap is fetched from the metadata item 'colormap'. Fallback colormap is 'gray'.
 
@@ -1167,6 +1167,7 @@ class Nansat(Domain, Exporter):
         band_id : int or str
 
         """
+        #
         bandNo = self.get_band_number(band_id)
         band = self.get_GDALRasterBand(band_id)
 
