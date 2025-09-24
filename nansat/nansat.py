@@ -1111,7 +1111,6 @@ class Nansat(Domain, Exporter):
                                       dtype,
                                       ['COMPRESS=LZW']
                                       )
-            data = self.__getitem__(bandNo)
             outDataset.GetRasterBand(1).WriteArray(data)
             outDataset.GetRasterBand(1).SetMetadata(band.GetMetadata())
             del outDataset
@@ -1885,8 +1884,16 @@ class Nansat(Domain, Exporter):
                (linVector < (self.shape()[0] - smooth_radius)))
 
         return pixVector[gpi], linVector[gpi]
-
-
+    def convert_db(self,band_id = 1):
+        bandNo = self.get_band_number(band_id)
+        data = self.__getitem__(bandNo)
+        data[data <= 0] = np.nan
+        data_db = 10 * np.log10(data)
+        del data
+        return data_db
+    # TODO
+    def filer(self,method :str):
+        pass
 def _import_mappers(log_level=None):
     """Import available mappers into a dictionary
 
@@ -1936,3 +1943,4 @@ def _import_mappers(log_level=None):
             nansat_mappers['mapper_generic'] = nansat_mappers.pop('mapper_generic')
 
     return nansat_mappers
+
