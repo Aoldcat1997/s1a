@@ -13,10 +13,12 @@ outfileName_2bands = "/Users/chang/code/S1A/data/S1A_EW_GRDM_1SDH_20221201T15365
 # 初始化数据
 n = Nansat(infileName)
 # 提取波段数据1，转换为db数据
+# 提取波段数据，将其转换为db数据
 imghh = n[bandNoHH]
 imghh[imghh <= 0] = np.nan
 imghh = 10 * np.log10(imghh)
 print(np.nanmin(imghh.flatten()), np.nanmax(imghh.flatten()))
+# 将转换后的数据进行去噪处理
 # 创建输出数据，添加处理好的波段1数据
 nout = Nansat.from_domain(n, imghh, parameters={'name': "sigma_hh"})
 # 添加原始数据的元数据

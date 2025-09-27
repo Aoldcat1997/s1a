@@ -44,7 +44,7 @@ from nansat.node import Node
 from nansat.pointbrowser import PointBrowser
 
 from nansat.exceptions import NansatGDALError, WrongMapperError, NansatReadError
-
+from nansat.filter import lee_enhanced_filter
 import collections
 if hasattr(collections, 'OrderedDict'):
     from collections import OrderedDict
@@ -1892,8 +1892,25 @@ class Nansat(Domain, Exporter):
         del data
         return data_db
     # TODO
-    def filer(self,method :str):
-        pass
+    def filers(self, method: str, img: np.array) -> np.array:
+        """
+        对输入图像应用指定的滤波方法进行处理
+
+        参数:
+            method: 字符串类型，指定要使用的滤波方法
+                    目前支持 "lee_en"（Lee增强滤波器）
+            img: numpy数组，输入的待处理图像
+
+        返回:
+            numpy数组，经过指定滤波处理后的图像
+        """
+        # 判断是否使用Lee增强滤波器
+        if method == "lee_en":
+            # 调用Lee增强滤波器函数处理图像
+            img = lee_enhanced_filter(img)
+
+        # 返回处理后的图像（若未匹配到任何方法，则返回原始图像）
+        return img
 def _import_mappers(log_level=None):
     """Import available mappers into a dictionary
 
