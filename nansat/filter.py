@@ -1,4 +1,4 @@
-import cv2
+# import cv2
 import numpy as np
 from scipy import ndimage, signal
 from scipy.interpolate import griddata
@@ -183,78 +183,6 @@ def anisotropic_diffusion(img, **kwargs):
     # filtered_img[zero_or_negative_mask] = img[zero_or_negative_mask]
     filtered_img[infinite_mask] = img[infinite_mask]
     return 10 ** (filtered_img / 10)
-
-
-def guided_filter(img, **kwargs):
-    """
-    Apply a Guided Filter to an image to enhance and smooth it while
-    preserving edges.
-
-    This function applies a Guided Filter to the input image using OpenCV's
-    guidedFilter implementation. NaN values are preserved as they are in the
-    input image. The filter is applied to the logarithmic scale (10 * log10)
-    of the image after handling NaNs.
-
-    Parameters:
-    ----------
-    img : np.ndarray
-        A 2D or 3D array representing the input image. For a 3D array, the
-        operation is applied to each channel independently.
-    **kwargs
-        Additional keyword arguments:
-        'radius' : int
-            Radius of the kernel used in the Guided Filter.
-            Default is 1.
-        'eps' : float
-            Regularization parameter in Guided Filter to smooth within
-            a radius. Default is 3.
-        'ddepth' : int
-            The depth of the output image.
-            Default is -1 (use same depth as the source).
-
-    Returns:
-    -------
-    np.ndarray
-        A 2D or 3D array of the same shape as 'img', containing the filtered
-        image. NaN values and zero or negative values are handled
-        specifically as described in the notes below.
-
-   Notes
-   -----
-   He, Kaiming, Jian Sun, and Xiaoou Tang. "Guided image filtering."
-    IEEE transactions on pattern analysis and machine intelligence 35.6 (2012)
-    : 1397-1409.
-    https://docs.opencv.org/4.x/de/d73/classcv_1_1ximgproc_1_1GuidedFilter.html
-    """
-    radius = kwargs.get('radius', 1)
-    eps = kwargs.get('eps', 3)
-    ddepth = kwargs.get('ddepth', -1)
-    # Apply Guided Filter
-    mask = np.isnan(img)
-    img_filled = fill_nan_value(img)
-
-    img_db = 10 * np.log10(img_filled)
-    img_db_filled = fill_nan_value(img_db)
-
-    filtered_img = cv2.ximgproc.guidedFilter(
-        guide=img_db_filled,
-        src=img_filled,
-        radius=radius,
-        eps=eps,
-        dDepth=ddepth)
-
-    # Vectorize conditional replacements using masks
-    filtered_img[mask] = np.nan  # Preserve original NaN positions
-    zero_or_negative_mask = filtered_img <= 0
-    infinite_mask = np.isinf(filtered_img)
-
-    # Directly use img values where filtered_img fails conditions
-    filtered_img[zero_or_negative_mask] = img[zero_or_negative_mask]
-    filtered_img[infinite_mask] = img[infinite_mask]
-
-    return filtered_img
-
-
 def tv_bregman(X: np.ndarray, **kwargs) -> np.ndarray:
     """
     Denoise an input array X using Total Variation Bregman denoising.
